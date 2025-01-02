@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>動態心智圖</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gojs/2.3.14/go.js"></script>
+    <style>
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #myDiagramDiv {
+            width: 100%;
+            height: 100%;
+            background-color: #ffffff;
+        }
+
+        .description-box {
+            position: absolute;
+            top: 20%;
+            left: 20%;
+            width: 60%;
+            background-color: #ffffff;
+            border: 1px solid #ccc;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            padding-top: 50px;
+            font-family: Arial, sans-serif;
+            font-size: 18px;
+            line-height: 1.5;
+            z-index: 1000;
+            display: none;
+        }
+
+        .description-box .close-btn {
+            position: absolute;
+            top: 0px;
+            /* 靠近框上方 */
+            right: 10px;
+            background: #AD5A5A;
+            border: none;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .description-box .close-btn:hover {
+            background: #804040;
+        }
+
+        .description-box button {
+            margin-top: 20px;
+            padding: 5px 10px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .description-box img {
+            max-width: 100%;
+            height: auto;
+            margin-top: 20px;
+            display: block;
+        }
+        h1 {
+            text-align: center;
+            margin-top: 20px;
+            margin-left: 5px;
+            font-size: 36px;
+            font-weight: bold;
+            color: #333;
+        }
+
+    </style>
+</head>
+
+<body>
+    <div id="myDiagramDiv"></div>
+    <div id="descriptionBox" class="description-box">
+        <button class="close-btn" onclick="closeDescriptionBox()">&times;</button>
+        <div id="descriptionContent"></div>
+    </div>
+    <script>
+        const $ = go.GraphObject.make;
+        const myDiagram = $(go.Diagram, "myDiagramDiv", {
+            layout: $(go.ForceDirectedLayout, { maxIterations: 200, defaultSpringLength: 50 })
+        });
+
+        myDiagram.nodeTemplate = $(
+            go.Node,
+            "Auto",
+            new go.Binding("visible"),
+            $(go.Shape, "RoundedRectangle", { fill: "#34495E", strokeWidth: 0 }), // 深藍灰節點
+            $(go.TextBlock, { margin: 8, font: "bold 22px sans-serif", stroke: "#ffffff", wrap: go.TextBlock.WrapFit }, // 白色文字
+                new go.Binding("text", "key"))
+        );
+        
+
+        myDiagram.linkTemplate = $(
+            go.Link,
+            { routing: go.Link.Normal, curve: go.Link.Bezier },
+            $(go.Shape, { strokeWidth: 2, stroke: "#555" })
+        );
+
+        const model = $(go.GraphLinksModel);
+        model.nodeDataArray = [
+            { key: "海洋運輸期末心得：動態心智圖", visible: true },
+            { key: "航線種類", parent: "海洋運輸期末心得：動態心智圖", visible: true },
+            { key: "貨櫃運輸", parent: "海洋運輸期末心得：動態心智圖", visible: true },
+            { key: "貨櫃船大型化趨勢", parent: "海洋運輸期末心得：動態心智圖", visible: true },
+            { key: "複合式運輸", parent: "海洋運輸期末心得：動態心智圖", visible: true },
+            { key: "基隆港參訪", parent: "海洋運輸期末心得：動態心智圖", visible: true },
+            { key: "自由貿易港區", parent: "海洋運輸期末心得：動態心智圖", visible: true },
+            { key: "Maritime ITS", parent: "海洋運輸期末心得：動態心智圖", visible: true },
+            { key: "期中報告心得", parent: "海洋運輸期末心得：動態心智圖", visible: true },
+            { key: "Port-To-Port", parent: "航線種類", visible: false },
+            { key: "Inter-Range", parent: "航線種類", visible: false },
+            { key: "Multi-Ranges", parent: "航線種類", visible: false },
+            { key: "起源故事", parent: "貨櫃運輸", visible: false },
+            { key: "整櫃運輸", parent: "貨櫃運輸", visible: false },
+            { key: "併櫃運輸", parent: "貨櫃運輸", visible: false },
+            { key: "Port CDM", parent: "Maritime ITS", visible: false },
+            { key: "VTS", parent: "Maritime ITS", visible: false }
+
+        ];
+
+        model.linkDataArray = model.nodeDataArray
+            .filter(node => node.parent)
+            .map(node => ({ from: node.parent, to: node.key }));
+
+        myDiagram.model = model;
+
+        myDiagram.addDiagramListener("ObjectSingleClicked", function (e) {
+            const part = e.subject.part;
+            if (part instanceof go.Node) {
+                const nodeKey = part.data.key;
+                if (nodeKey === "VTS") {
+                    showDescriptionBox(
+                        "<img src='https://taiwanreports.com/wp-content/uploads/2023/09/%E5%8F%B0%E4%B8%AD%E6%B8%AF%E8%88%B9%E8%88%B6%E4%BA%A4%E9%80%9A%E6%9C%8D%E5%8B%99%E7%B3%BB%E7%B5%B1%EF%BC%88VTS%EF%BC%89%E9%82%81%E5%85%A5%E6%99%BA%E6%85%A7%E5%8C%96%E7%AE%A1%E7%90%86%E6%96%B0%E7%B4%80%E5%85%83%EF%BC%91.jpg' alt='VTS示意圖' style='max-width: 60%; height: auto; display: block; margin: 0 auto;'>" +
+                        "VTS是由港口當局設立的監控系統，類似於飛機的空中交通管制，旨在確保港口水域的航行安全與效率。利用雷達、閉路電視、電子海圖、VHF無線電通訊以及船舶自動識別系統（AIS）來實時追蹤船舶的移動，隨時監看港內、外各船隻的動態，並提供航行指引，尤其是在航道狹窄或交通密集的區域。<br>" +
+                        "除了基本的船舶監控，VTS還可協調船舶的進出港操作，提供天氣、潮汐和海流等相關數據，進一步提升港口的運營效率與安全性。<br><br>" +
+                        "<img src='https://lh3.googleusercontent.com/proxy/9cunkIUj5nh-oc6lvOWL58SF6ncJ3I9FrzwpvsUEjaVHgqW7xt-ZHRCLZ9T8bRYR1fMWlCecsWJRTVorUv7lGA' alt='VTS示意圖' style='max-width: 60%; height: auto; display: block; margin: 0 auto;'>" +
+                        "前陣子我讀警專海巡的朋友給我看了電子海圖，當時我便覺得電子海圖如果能結合其他資訊，一定會使船舶管理效率大大提升，直到海運上到VTS，才發現果然這想法早已被實踐了！！"
+                    );
+                } else if (nodeKey === "Port-To-Port") {
+                    showDescriptionBox(
+                        "港到港，指兩港間的定期運輸，多為單向貨物流動，回程空載。常運輸原材料如石油、礦物和穀物，採包船模式，靠需求波動安排航線。<br><br>" +
+                        "港到港運輸模式雖然靈活，但回程空載的問題凸顯了資源利用率的不足，也使得運費可能較高。但對於大量運輸原料的產業來說，它仍是關鍵物流方式，能夠有效支撐全球供應鏈。"
+
+                    );
+                } else if (nodeKey === "Inter-Range") {
+                    showDescriptionBox(
+                        "跨區航線，以定期運輸貨櫃貨物為主，連接東亞、北美和西歐等全球經濟中心，依重要貿易關係選擇港口，穿越海洋後重複服務另一區域港口。跨區航線是全球貿易的命脈，支撐了經濟中心之間的密切連結。<br><br>" +
+                        "這類航線讓國際貨物能快速流通，但其高度依賴固定航線與港口，使其在面對需求變化時缺乏靈活性。"
+
+                    );
+                } else if (nodeKey === "Multi-Ranges") {
+                    showDescriptionBox(
+                        "多區域航線，主要運輸貨櫃，定期服務多個港口，依重要貿易關係選擇站點，跨越海洋連接多區域，涵蓋東亞、北美與西歐等全球經濟樞紐。<br><br>" +
+                        "多區域航線的覆蓋範圍最廣，能有效服務多國市場並提升航運效率。但如此廣泛的服務也增加了路線安排的複雜性，也因停靠港口多而面臨時間延誤和物流成本增加的挑戰。未來若能透過數位化航運管理優化路徑，將有望提升效率與可靠度。"
+
+                    );
+                } else if (nodeKey === "貨櫃船大型化趨勢") {
+                    showDescriptionBox(
+                        "老師在上貨櫃單元時，有讓大家討論「船越造越大真的好嗎？」當時老師給我們自由回答，大家提了很多我們認為大型化的優點（經濟效益使單位運輸成本下降、檢少單位運輸碳排......）而後來在上定期航運單元時，又提到船舶大型化的議題。雖然隨著造船技術進步，大型化是不可避免的趨勢，但港口需要巨額投資升級基礎設施才能處理超大型貨櫃船，例如擴大貨櫃場站、增加生產力及加強基礎設施維護，如疏濬航道。這些投入可能造成供應鏈不穩定與港口擁堵等問題。<br>" +
+                        "長賜輪事件更突顯了超大型貨櫃船的操作風險，諸如裝卸效率、平衡穩定及救援難度等挑戰。這些現實問題提醒我們，船舶大型化雖有助於降低成本，但若忽視港口與物流的配套設施，反而可能帶來更大的風險。<br>"+
+                        "因此，我認為大型貨櫃船的建造與運營不僅需考量規模經濟，還需兼顧港口基礎設施與整體供應鏈效率的平衡。未來的發展應以運輸系統整體最佳化為目標，而不是單純追求「越大越好」。"+
+                        "<img src='https://upload.wikimedia.org/wikipedia/commons/1/10/IMO_9811000_EVER_GIVEN_%2811%29.JPG' alt='長賜輪'>"+
+                        "<p style='text-align: center; font-style: italic;'>長賜輪，世界最長的船隻之一<br>" 
+
+                    );
+                } else if (nodeKey === "Port CDM") {
+                    showDescriptionBox(
+                        "我們這組的報告主題為智慧型港口，在查找資料時找到的Port CDM正巧是老師負責的計劃。<br><br>" +
+                        "Port CDM旨在透過即時數據串流與標準化數據交換，提升港口作業的預測性與效率。<br><br>" +
+                        "我們也有找到許多國外的例子，例如西班牙的阿爾赫西拉斯港藉Port CDM，讓船舶能更有效率地進行停靠等作業。也很期待之後能聽到老師分享更多最新的應用，讓我們開開眼界！"+
+                        "<img src='https://www.motc.gov.tw/ch/app/data/image?id=14&module=news&detailNo=1308682253680775168&serno=7c649058-f5c8-4598-9c6c-ea75368db1d5&type=pic&init=Y&preview=&aplistdn=' alt='老師繪製的圖'>"+
+                        "<p style='text-align: center; font-style: italic;'>老師繪製的圖<br>" 
+                       
+                    );
+                } else if (nodeKey === "起源故事") {
+                    showDescriptionBox(
+                        "老師在課堂中撥放貨櫃運輸起源的影片讓我印象深刻，裡面提到一個卡車司機在等待貨物從車上搬到船上時，突發奇想覺得如果貨物裝在缩子內運送，便能大幅提升搬運效率，於是貨櫃運輸的模式開始誕生。<br><br>" +
+                        "貨櫃的發展不僅大幅提高了物流效率，還促進全球貿易的快速發展。它提供了一種標準化的物流概念，降低了運輸成本，使商品能夠更快、更便宜地流通於世界各地，進一步推動了經濟全球化。<br><br>"+
+                        "從貨櫃的歷史中，我們可以學到不要侷限於傳統框架和想法，勇於提出新點子後，也要努力用行動來推行、實現，人人都有機會改變世界。"
+                    );
+                } else if (nodeKey === "整櫃運輸") {
+                    showDescriptionBox(
+                        "指貨物足以裝滿一整個貨櫃，由單一客戶承租整櫃運輸，包含20尺櫃、40尺櫃及40尺高立方櫃。適合貨量大、需要高安全性或專屬運輸的情況，適用於大型企業的大宗出口，如大型機械、大批量商品等。<br><br>" +
+                        "整櫃運輸讓我感受到規模經濟的力量，尤其是針對大宗貨物出口帶來的效率提升。整櫃能確保貨物的安全性與運輸效率。同時，這也讓我意識到，當規模足夠時，選擇整櫃不僅是一種經濟效益的最大化，也是企業品牌形象與客戶信任度的展現。"
+                    );
+                } else if (nodeKey === "併櫃運輸") {
+                    showDescriptionBox(
+                        "指貨物量不夠多，不足以裝一整個20英尺或40英尺的貨櫃，將多位客戶的貨物合併在同一貨櫃中運輸，適合貨量小、成本敏感的需求，如中小型企業的少量出口、個人行李托運等。併櫃運輸充分體現了物流資源的共享精神。<br><br>" +
+                        "對於貨量較少的中小型企業或個人而言，併櫃不僅降低了運輸成本，也讓跨國物流變得更加可行。我十分欣賞這種方式在成本與效益之間取得的平衡，同時也發現，這與生活中的合資策略非常類似。透過共享資源，每個人都能受益。"
+                    );
+                } else if (nodeKey === "複合式運輸") {
+                    showDescriptionBox(
+                        "在運輸工程課時，我們便學過複合運輸，當時重點在於「最後一哩路」的概念。而在海洋運輸課堂中，則聚焦於貨櫃從船上卸下後的運送流程。課堂中提到，複合式運輸的模式是先利用支線船（Feeder）將貨物聚集，再由大型船舶運送到中轉站（Interchange），接著再利用支線船將貨物分發出去。<br><br>" +
+                        "有趣的是，老師用網路和區域網路中心來比喻這個運輸模式，讓我們更直觀地理解其運作。此外，老師還提到，像黑貓宅急便的運輸系統，也運用了類似的概念，先集中包裹，再分送到各地。讓我們更了解複合運輸在現代物流中的應用，也體會到其對運輸效率的提升。"
+                    );
+                } else if (nodeKey === "基隆港參訪") {
+                    showDescriptionBox(
+                        "去基隆港參訪時，看到了課堂中教的各種港埠的組成要素以及場站設施，學長跟學姊跟我們介紹基隆港現今的各種規劃以及設施，也讓我見識到如今的基隆港身兼郵輪港以及貨櫃港的特殊角色。<br><br>" +
+                            "在基隆港，是我第一次親眼見到一大片貨櫃，內心其實是很震撼的，當天還剛好看到救援現場。走訪港務公司以及旅客動線，讓我了解實務是如何運作，也發現運管系畢業的學長姐在各個領域都可以發光發熱。"+
+                        "<img src='https://i.imgur.com/cWy7gU3.jpeg' alt='基隆港照片' style='max-width: 50%; height: auto; display: block; margin: 0 auto;'>" +
+                        "<p style='text-align: center; font-style: italic;'>參訪當天攝於基隆港</p>" 
+                    );
+                } else if (nodeKey === "自由貿易港區") {
+                    showDescriptionBox(
+                        "自由貿易港區是經行政院核定的特定區域，如國際港口或航空站，從事貿易、物流、貨櫃集散、轉口、加工等相關活動。該區域內的商品和服務進出口免關稅或少稅，並不受一般輸出入規範和政府限制，目的是促進國際貿易，簡化通關流程，吸引企業投資與經濟活動。<br><br>" +
+                        "雖然自由貿易港區的設立帶來了一些潛在的缺點，例如對本地小型企業的競爭壓力、可能的環境與勞工風險等。<br>"+
+                        "但我認為台灣作為一個貿易導向型的經濟體，十分依賴國際貿易維持經濟穩定與成長，目前現有的自由貿易港區的稅制優惠更是吸引了很多高附加價值的產業來台設點，如電子零件和半導體相關產業。持續推動自由貿易港區，在台灣是具有極大發展潛力的政策。<br>"+
+                        "<img src='https://www.xnest.com.tw/wp-content/uploads/2021/12/%E5%8F%B0%E7%81%A3%E8%87%AA%E7%94%B1%E8%B2%BF%E6%98%93%E6%B8%AF%E5%8D%80-%E5%89%8D%E9%80%B2%E6%96%B0%E5%A4%A7%E9%99%B8.png' alt='自由貿易港區圖片' style='max-width: 100%; height: auto; display: block; margin: 0 auto;'>" 
+                        );
+                    } else if (nodeKey === "期中報告心得") {
+                        showDescriptionBox(
+                            "我們這組的報告主題是智慧化港口的各種技術，因為我們的文獻偏向講解技術面，所以我們找了許多延伸案例來補充。我們覺得智慧化港口雖能減少人力需求，提升運營效率，但系統故障時，現場人員的應變能力和經驗便成為運營穩定的關鍵。若缺乏完善的危機應變計畫，可能導致長時間中斷與經濟損失。<br>" +
+                            "此外，智慧化系統的維護需要高度專業技術，基層人力需求減少的同時，高技術人才的需求卻大幅增加。因此，港口自動化應同步強化人員培訓與應變模式。<br><br>"+
+                            "政府在推動智慧港口也需謹慎評估，老師在課堂中提到橫向整合的難度和高成本是主要挑戰。推動自動化前，應釐清核心目標，例如提升裝卸效率、優化物流排程、降低人為失誤、促進環保等，而非盲目追求潮流。只有在清晰目標與資源合理分配的基礎上，智慧化港口才能真正實現長期效益與永續發展。"
+                            );
+                } else {
+                    myDiagram.model.nodeDataArray.forEach(node => {
+                        if (node.parent === nodeKey) {
+                            const newVisibility = !node.visible;
+                            myDiagram.model.setDataProperty(node, "visible", newVisibility);
+                        }
+                    });
+                    myDiagram.layoutDiagram(true);
+                }
+            }
+        });
+
+        function showDescriptionBox(content) {
+            const descriptionBox = document.getElementById("descriptionBox");
+            const descriptionContent = document.getElementById("descriptionContent");
+            descriptionContent.innerHTML = content; // 設定為HTML，支持<br>等標籤
+            descriptionBox.style.display = "block";
+        }
+
+        function closeDescriptionBox() {
+            const descriptionBox = document.getElementById("descriptionBox");
+            descriptionBox.style.display = "none";
+        }
+    </script>
+</body>
+
+</html>
